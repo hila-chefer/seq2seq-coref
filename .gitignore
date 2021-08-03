@@ -3,3 +3,4 @@ data/*
 outputs/*
 model/*
 cache/*
+__pycache__/*
