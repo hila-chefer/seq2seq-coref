@@ -1,0 +1,72 @@
+# import re
+# import sys
+#
+# WORD_COL_NUM = 3
+# TARGET_COL_NUM = -1
+#
+# def remap_target(raw_target):
+#     mapping = {}
+#     counter = 0
+#     result = []
+#     stack = []
+#     for i in range(len(raw_target)):
+#         targets = raw_target[i].split('|')
+#         res_str = ""
+#         for num_tar, target in enumerate(targets):
+#             reg_iter = re.finditer("(\d+)", target)
+#             for match in reg_iter:
+#                 span, group = match.span(), match.group()
+#                 if group not in mapping:
+#                     mapping[group] = counter
+#                     counter += 1
+#                 if num_tar == 0:
+#                     res_str += target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
+#                     stack.append(str(mapping[group]))
+#                 else:
+#                     res_str += '|' + target[:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
+#
+#         if res_str == '':
+#                 result.append(raw_target[i])
+#         else:
+#             result.append(res_str)
+#     return result
+#
+# def convert_file(file_name):
+#     result = []
+#     with open(file_name,'r') as f:
+#         words, raw_target = [], []
+#         for line in f.readlines():
+#             if not line.startswith('#') and line.strip() != '':
+#                 columns = line.split()
+#                 words.append(columns[WORD_COL_NUM])
+#                 raw_target.append(columns[TARGET_COL_NUM])
+#             if line.startswith('#end'):
+#                 remapped = remap_target(raw_target)
+#                 text = " ".join(words)
+#                 target = " ".join(remapped)
+#                 words, raw_target = [], []
+#                 result.append((text, target))
+#     return result
+#
+# def write_results(to_convert, to_output):
+#     result = convert_file(to_convert)
+#     with open('{}'.format(to_output), 'w+') as f:
+#         for elem in result:
+#             to_write = elem[0]+'\t'+elem[1]+'\n'
+#             to_write = to_write.replace('|',' | ')
+#             f.write(to_write)
+#
+# if __name__ == '__main__':
+#     #INPUT FILE - original data file i.e., train/test/dev
+#     input_file = sys.argv[1]
+#     output_file = sys.argv[2]
+#     write_results(input_file, output_file)
+#
+#
+
+str = 'The KMT vice chairman arrived at party headquarters to meet with KMT Chairman Lien Chan on the afternoon of %pw . After a long talk of over an hour , Wang Jin - pyng expressed his wish not to renew his term as KMT vice chairman . He said that he will follow Lien Chan as a lifelong volunteer . %pw	(0 (1) - 0) - - - - - - - (2 | (1) - - 2) - - - - - - - - - - - - - - - (0 - - 0) - (0) - - - - (0) - - (1) - - - (0) - - (0) - - (2 2) - - - - - -'
+x = str.split('\t')
+sentence = x[1].replace(' | ','|').split()
+for i in range(len(sentence)):
+
+    print( x[0].split(' ')[i],sentence[i].replace(' ',''))
