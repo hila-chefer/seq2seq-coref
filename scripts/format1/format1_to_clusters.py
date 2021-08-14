@@ -57,4 +57,6 @@ if __name__ == '__main__':
     output_file = sys.argv[2]
     with open(output_file, "w+") as outfile:
         result = convert_file(input_file)
-        json.dump(result, outfile)
+        for i in result:
+            json.dump(i, outfile)
+            outfile.write('\n')
