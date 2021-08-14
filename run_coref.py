@@ -6,9 +6,10 @@ import shutil
 import git
 import torch
 
-from transformers import AutoConfig, AutoTokenizer, CONFIG_MAPPING, LongformerConfig, RobertaConfig
+from transformers import AutoConfig, AutoTokenizer, CONFIG_MAPPING, LongformerConfig, BartConfig, BartForConditionalGeneration
 
 from modeling import S2E
+from modeling_seq2seq import Bart
 from data import get_dataset
 from cli import parse_args
 from training import train, set_seed
@@ -96,15 +97,18 @@ def main():
             "and load it from here, using --tokenizer_name"
         )
 
-    config_class = LongformerConfig
-    base_model_prefix = "longformer"
+    # config_class = LongformerConfig
+    # base_model_prefix = "longformer"
+    #
+    # S2E.config_class = config_class
+    # S2E.base_model_prefix = base_model_prefix
+    # model = S2E.from_pretrained(args.model_name_or_path,
+    #                             config=config,
+    #                             cache_dir=args.cache_dir,
+    #                             args=args)
 
-    S2E.config_class = config_class
-    S2E.base_model_prefix = base_model_prefix
-    model = S2E.from_pretrained(args.model_name_or_path,
-                                config=config,
-                                cache_dir=args.cache_dir,
-                                args=args)
+    model_class = Bart(tokenizer)
+    model = model_class.model
 
     model.to(args.device)
 
