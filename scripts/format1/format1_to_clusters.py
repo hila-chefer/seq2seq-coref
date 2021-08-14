@@ -1,7 +1,7 @@
 import re
 import json
 import sys
-
+import ast
 def from_dict_to_list(dic):
     result = []
     for i in dic:
@@ -12,18 +12,17 @@ def convert_file(file_name):
     result = []
     with open(file_name,'r') as f:
         for line in f.readlines():
+            line = ast.literal_eval(line)
             json_result = {}
-            json_result['sentences'] = []
+            json_result['sentences'] = line['sentences']
             json_result['clusters'] = {}
 
-            sentence, target = line.split('\t')
-            json_result['sentences'].append(sentence.split())
-            splitted_target = target.split()
+            target = line['target']
+
             stack = []
             ambiguity = False
-
             char_counter = 0
-            for i in splitted_target:
+            for i in target:
                 single_token_reg = re.match('\((\d+)\)',i)
                 open_span_reg = re.match('\((\d+)', i)
                 close_span_reg = re.match('(\d+)\)', i)
@@ -45,11 +44,9 @@ def convert_file(file_name):
                     if cluster not in json_result['clusters']:
                         json_result['clusters'][cluster] = []
                     json_result['clusters'][cluster].append([popped_char_counter, char_counter])
-
                 if ambiguity is False:
                     char_counter += 1
                 ambiguity = False
-
             json_result['clusters'] = from_dict_to_list(json_result['clusters'])
             result.append(json_result)
     return result
