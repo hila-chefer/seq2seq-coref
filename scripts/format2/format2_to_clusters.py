@@ -21,10 +21,10 @@ def convert_file(file_name):
     result = []
     with open(file_name,'r') as f:
         for i, line in enumerate(f.readlines()):
+            json_input = ast.literal_eval(line)
             json_result = {}
-            splitted = line.split('\t')
-            sentence = splitted[0]
-            format2 = splitted[1]
+            sentence = json_input['sentences']
+            format2 = json_input['target']
             format2_splitted = format2.split('SEP')
             cluster_lists = text_cluster_to_list(format2_splitted)
             json_result['sentences'] = sentence
@@ -38,4 +38,6 @@ if __name__ == '__main__':
     output_file = sys.argv[2]
     with open(output_file, "w+") as outfile:
         result = convert_file(input_file)
-        json.dump(result, outfile)
+        for i in result:
+            json.dump(i, outfile)
+            outfile.write('\n')
