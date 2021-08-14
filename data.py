@@ -12,7 +12,7 @@ from torch.utils.data import Dataset
 
 # CorefExample = namedtuple("CorefExample", ["token_ids", "clusters"])
 
-BartCorefExample = namedtuple("BartCorefExample", ["sentence", "labels"])
+BartCorefExample = namedtuple("BartCorefExample", ["sentence_len", "input_ids", "attention_mask", "label_ids", "decoder_ids"])
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +140,23 @@ class CorefDataset(Dataset):
                 examples.append((input_words, clusters))
         return examples
 
+    def shift_tokens_right(self, input_ids, pad_token_id, decoder_start_token_id):
+        """
+        Shift input ids one token to the right.
+        """
+        shifted_input_ids = input_ids.new_zeros(input_ids.shape)
+        shifted_input_ids[:, 1:] = input_ids[:, :-1].clone()
+        shifted_input_ids[:, 0] = decoder_start_token_id
+
+        assert pad_token_id is not None, "self.model.config.pad_token_id has to be defined."
+        # replace possible -100 values in labels by `pad_token_id`
+        shifted_input_ids.masked_fill_(shifted_input_ids == -100, pad_token_id)
+
+        return shifted_input_ids
+
+    def prepare_decoder_input_ids_from_labels(self, labels):
+        return self.shift_tokens_right(labels, self.tokenizer.pad_token_id, 2)
+
     def _tokenize(self, examples):
         coref_examples = []
         num_examples_filtered = 0
@@ -147,10 +164,16 @@ class CorefDataset(Dataset):
             sentence = ' '.join(words)
             target = ' '.join(clusters)
 
-            input_ids = self.tokenizer.encode(sentence, add_special_tokens=False, return_tensors="pt")
-            decoder_input_ids = self.tokenizer.encode(target, add_special_tokens=False, return_tensors="pt")
-            if 0 < input_ids.shape[1] < self.max_seq_length and 0 < decoder_input_ids.shape[1] < self.max_seq_length:
-                coref_examples.append(BartCorefExample(sentence=sentence, labels=target))
+            input_ids_no_pad = self.tokenizer.encode_plus(sentence, return_tensors="pt").input_ids
+            if 0 < input_ids_no_pad.shape[1] < self.max_seq_length:
+                input_ids = self.tokenizer.encode_plus(sentence, return_tensors="pt", pad_to_max_length=True,
+                                                       max_length=self.max_seq_length, truncation=True)
+                labels = self.tokenizer.encode_plus(target, return_tensors="pt", pad_to_max_length=True,
+                                                    max_length=self.max_seq_length, truncation=True).input_ids
+                decoder_input_ids = self.prepare_decoder_input_ids_from_labels(labels)
+                coref_examples.append(BartCorefExample(sentence_len=len(words), input_ids=input_ids.input_ids.flatten(),
+                                                       attention_mask=input_ids.attention_mask.flatten(),
+                                                       decoder_ids=decoder_input_ids.flatten(), label_ids=labels.flatten()))
             else:
                 num_examples_filtered += 1
         return coref_examples, num_examples_filtered

@@ -128,14 +128,17 @@ def train(args, train_dataset, model, tokenizer, evaluator):
     for _ in train_iterator:
         epoch_iterator = tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])
         for step, batch in enumerate(epoch_iterator):
-            batch = tuple(tensor.to(args.device) for tensor in batch)
-            input_ids, attention_mask, gold_clusters = batch
-            model.train()
+            # batch = tuple(tensor.to(args.device) for tensor in batch)
+            # input_ids, attention_mask, gold_clusters = batch
+            # model.train()
+            #
+            # outputs = model(input_ids=input_ids,
+            #                 attention_mask=attention_mask,
+            #                 gold_clusters=gold_clusters,
+            #                 return_all_outputs=False)
 
-            outputs = model(input_ids=input_ids,
-                            attention_mask=attention_mask,
-                            gold_clusters=gold_clusters,
-                            return_all_outputs=False)
+            model.train()
+            outputs = model(batch.input_ids, batch.decoder_ids, batch.label_ids, batch.attention_mask)
             loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
             losses = outputs[-1]
 

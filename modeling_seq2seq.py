@@ -1,8 +1,9 @@
-from transformers import BartConfig, BartForConditionalGeneration
+from transformers import BartConfig, BartForConditionalGeneration, BartModel
+from torch.nn import Module
 
-class Bart():
+class Bart(Module):
     def __init__(self, tokenizer):
-        # super().__init__(config)
+        super().__init__()
         self.config = BartConfig()
         self.model = BartForConditionalGeneration(self.config)
         self.tokenizer = tokenizer
@@ -22,17 +23,20 @@ class Bart():
         return shifted_input_ids
 
     def prepare_decoder_input_ids_from_labels(self, labels):
-        return self.shift_tokens_right(labels, self.config.pad_token_id, self.config.decoder_start_token_id)
+        return self.shift_tokens_right(labels, self.config.pad_token_id, 2)
 
-    def forward(self, sentence, labels):
-        input_ids = self.tokenizer.batch_encode_plus(sentence, add_special_tokens=False, return_tensors="pt",
-                                          padding=True).input_ids
+    def forward(self, input_ids, decoder_input_ids, labels=None, attention_mask=None):
 
+        outputs = tuple()
         if labels is not None:
-            labels = self.tokenizer.batch_encode_plus(labels, add_special_tokens=False, return_tensors="pt",
-                                                      padding=True).input_ids
-            decoder_input_ids = self.prepare_decoder_input_ids_from_labels(labels)
+            losses = {}
 
-            outputs = self.model(input_ids=input_ids, decoder_input_ids=decoder_input_ids, labels=labels)
+            loss = self.model(attention_mask=attention_mask.to(self.model.device),
+                                 input_ids=input_ids.to(self.model.device),
+                                 decoder_input_ids=decoder_input_ids.to(self.model.device),
+                                 labels=labels.to(self.model.device))[0]
+
+            losses.update({"loss": loss})
+            outputs = (loss,) + outputs + (losses,)
 
         return outputs

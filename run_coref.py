@@ -107,8 +107,7 @@ def main():
     #                             cache_dir=args.cache_dir,
     #                             args=args)
 
-    model_class = Bart(tokenizer)
-    model = model_class.model
+    model = Bart(tokenizer)
 
     model.to(args.device)
 
