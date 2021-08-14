@@ -1,5 +1,6 @@
 import re
 import sys
+import json
 
 WORD_COL_NUM = 3
 TARGET_COL_NUM = -1
@@ -23,12 +24,13 @@ def remap_target(raw_target):
                     res_str += target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
                     stack.append(str(mapping[group]))
                 else:
-                    res_str += '|' + target[:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
-
+                    res_str += ' | ' + target[:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
         if res_str == '':
                 result.append(raw_target[i])
         else:
-            result.append(res_str)
+            splitted_res_str = res_str.split()
+            for i in splitted_res_str:
+                result.append(i)
     return result
 
 def convert_file(file_name):
@@ -42,19 +44,18 @@ def convert_file(file_name):
                 raw_target.append(columns[TARGET_COL_NUM])
             if line.startswith('#end'):
                 remapped = remap_target(raw_target)
-                text = " ".join(words)
-                target = " ".join(remapped)
+                json = {'sentences' : words, 'target' : remapped}
                 words, raw_target = [], []
-                result.append((text, target))
+                result.append(json)
     return result
 
 def write_results(to_convert, to_output):
     result = convert_file(to_convert)
-    with open('{}'.format(to_output), 'w+') as f:
-        for elem in result:
-            to_write = elem[0]+'\t'+elem[1]+'\n'
-            to_write = to_write.replace('|',' | ')
-            f.write(to_write)
+    with open(to_output, "w") as outfile:
+        for i in result:
+            json.dump(i, outfile)
+            outfile.write('\n')
+
 #
 if __name__ == '__main__':
     #INPUT FILE - original data file i.e., train/test/dev
