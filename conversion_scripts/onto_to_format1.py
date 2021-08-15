@@ -1,6 +1,7 @@
 import re
 import sys
 import json
+import os
 
 WORD_COL_NUM = 3
 TARGET_COL_NUM = -1
@@ -33,35 +34,29 @@ def remap_target(raw_target):
                 result.append(i)
     return result
 
-def convert_file(file_name):
+def convert_file(file_name, to_output):
     result = []
     with open(file_name,'r') as f:
         words, raw_target = [], []
-        for line in f.readlines():
+        lines = f.readlines()
+        for line in lines:
             if not line.startswith('#') and line.strip() != '':
                 columns = line.split()
                 words.append(columns[WORD_COL_NUM])
                 raw_target.append(columns[TARGET_COL_NUM])
             if line.startswith('#end'):
                 remapped = remap_target(raw_target)
-                json = {'sentences' : words, 'target' : remapped}
+                json_res = {'sentences' : words, 'target' : remapped}
                 words, raw_target = [], []
-                result.append(json)
-    return result
+                with open(to_output, "a+") as outfile:
+                    json.dump(json_res, outfile)
+                    outfile.write('\n')
 
-def write_results(to_convert, to_output):
-    result = convert_file(to_convert)
-    with open(to_output, "w") as outfile:
-        for i in result:
-            json.dump(i, outfile)
-            outfile.write('\n')
-
-#
 if __name__ == '__main__':
     #INPUT FILE - original data file i.e., train/test/dev
     input_file = sys.argv[1]
     output_file = sys.argv[2]
-    write_results(input_file, output_file)
+    convert_file(input_file, output_file)
 
 
 
