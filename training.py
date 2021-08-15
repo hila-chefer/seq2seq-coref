@@ -198,7 +198,7 @@ def train(args, train_dataset, model, tokenizer, evaluator):
                     # f1 = results["f1"]
                     f1 = results["loss"]
                     # if f1 > best_f1:
-                    if f1 < best_f1:
+                    if f1 < best_f1 or best_f1 == -1:
                         best_f1 = f1
                         best_global_step = global_step
                         # Save model checkpoint
