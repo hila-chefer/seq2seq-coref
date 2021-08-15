@@ -107,7 +107,11 @@ def main():
     #                             cache_dir=args.cache_dir,
     #                             args=args)
 
-    model = Bart(tokenizer)
+
+    # model = Bart(tokenizer)
+
+    config = BartConfig()
+    model = BartForConditionalGeneration(config)
 
     model.to(args.device)
 

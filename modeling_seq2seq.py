@@ -40,3 +40,6 @@ class Bart(Module):
             outputs = (loss,) + outputs + (losses,)
 
         return outputs
+
+    def zero_grad(self) -> None:
+        self.model.zero_grad()

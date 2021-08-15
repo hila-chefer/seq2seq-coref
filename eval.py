@@ -41,67 +41,96 @@ class Evaluator:
         losses = defaultdict(list)
         doc_to_prediction = {}
         doc_to_subtoken_map = {}
-        for (doc_key, subtoken_maps), batch in eval_dataloader:
+        # for (doc_key, subtoken_maps), batch in eval_dataloader:
+        tot_loss = 0
+        num_batches = 0
+        for batch in eval_dataloader:
 
-            batch = tuple(tensor.to(self.args.device) for tensor in batch)
-            input_ids, attention_mask, gold_clusters = batch
+            # batch = tuple(tensor.to(self.args.device) for tensor in batch)
+            # input_ids, attention_mask, gold_clusters = batch
+            #
+            # with torch.no_grad():
+            #     outputs = model(input_ids=input_ids,
+            #                     attention_mask=attention_mask,
+            #                     gold_clusters=gold_clusters,
+            #                     return_all_outputs=True)
+            #     loss_dict = outputs[-1]
 
             with torch.no_grad():
-                outputs = model(input_ids=input_ids,
-                                attention_mask=attention_mask,
-                                gold_clusters=gold_clusters,
-                                return_all_outputs=True)
+                outputs = tuple()
+                losses = {}
+
+                # "sentence_len", "input_ids", "attention_mask", "label_ids", "decoder_ids"
+                batch = tuple(tensor.to(self.args.device) for tensor in batch)
+                _, input_ids, attention_mask, label_ids, decoder_ids = batch
+
+                loss = model(attention_mask=attention_mask,
+                             input_ids=input_ids,
+                             decoder_input_ids=decoder_ids,
+                             labels=label_ids)[0]
+
+                losses.update({"loss": loss})
+                outputs = (loss,) + outputs + (losses,)
+                loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
+                losses = outputs[-1]
                 loss_dict = outputs[-1]
 
-            if self.args.n_gpu > 1:
-                loss_dict = {key: val.mean() for key, val in loss_dict.items()}
+                tot_loss += loss.item()
+                num_batches += 1
 
-            for key, val in loss_dict.items():
-                losses[key].append(val.item())
+        #     if self.args.n_gpu > 1:
+        #         loss_dict = {key: val.mean() for key, val in loss_dict.items()}
+        #
+        #     for key, val in loss_dict.items():
+        #         losses[key].append(val.item())
+        #
+        #     outputs = outputs[1:-1]
+        #
+        #     batch_np = tuple(tensor.cpu().numpy() for tensor in batch)
+        #     outputs_np = tuple(tensor.cpu().numpy() for tensor in outputs)
+        #     for output in zip(*(batch_np + outputs_np)):
+        #         gold_clusters = output[2]
+        #         gold_clusters = extract_clusters(gold_clusters)
+        #         mention_to_gold_clusters = extract_mentions_to_predicted_clusters_from_clusters(gold_clusters)
+        #         gold_mentions = list(mention_to_gold_clusters.keys())
+        #
+        #         starts, end_offsets, coref_logits, mention_logits = output[-4:]
+        #
+        #         max_antecedents = np.argmax(coref_logits, axis=1).tolist()
+        #         mention_to_antecedent = {((int(start), int(end)), (int(starts[max_antecedent]), int(end_offsets[max_antecedent]))) for start, end, max_antecedent in
+        #                                  zip(starts, end_offsets, max_antecedents) if max_antecedent < len(starts)}
+        #
+        #         predicted_clusters, _ = extract_clusters_for_decode(mention_to_antecedent)
+        #         candidate_mentions = list(zip(starts, end_offsets))
+        #
+        #         mention_to_predicted_clusters = extract_mentions_to_predicted_clusters_from_clusters(predicted_clusters)
+        #         predicted_mentions = list(mention_to_predicted_clusters.keys())
+        #         post_pruning_mention_evaluator.update(candidate_mentions, gold_mentions)
+        #         mention_evaluator.update(predicted_mentions, gold_mentions)
+        #         coref_evaluator.update(predicted_clusters, gold_clusters, mention_to_predicted_clusters,
+        #                                mention_to_gold_clusters)
+        #         doc_to_prediction[doc_key] = predicted_clusters
+        #         doc_to_subtoken_map[doc_key] = subtoken_maps
+        #
+        # post_pruning_mention_precision, post_pruning_mentions_recall, post_pruning_mention_f1 = post_pruning_mention_evaluator.get_prf()
+        # mention_precision, mentions_recall, mention_f1 = mention_evaluator.get_prf()
+        # prec, rec, f1 = coref_evaluator.get_prf()
 
-            outputs = outputs[1:-1]
+        # results = [(key, sum(val) / len(val)) for key, val in losses.items()]
+        # results += [
+        #     ("post pruning mention precision", post_pruning_mention_precision),
+        #     ("post pruning mention recall", post_pruning_mentions_recall),
+        #     ("post pruning mention f1", post_pruning_mention_f1),
+        #     ("mention precision", mention_precision),
+        #     ("mention recall", mentions_recall),
+        #     ("mention f1", mention_f1),
+        #     ("precision", prec),
+        #     ("recall", rec),
+        #     ("f1", f1)
+        # ]
 
-            batch_np = tuple(tensor.cpu().numpy() for tensor in batch)
-            outputs_np = tuple(tensor.cpu().numpy() for tensor in outputs)
-            for output in zip(*(batch_np + outputs_np)):
-                gold_clusters = output[2]
-                gold_clusters = extract_clusters(gold_clusters)
-                mention_to_gold_clusters = extract_mentions_to_predicted_clusters_from_clusters(gold_clusters)
-                gold_mentions = list(mention_to_gold_clusters.keys())
-
-                starts, end_offsets, coref_logits, mention_logits = output[-4:]
-
-                max_antecedents = np.argmax(coref_logits, axis=1).tolist()
-                mention_to_antecedent = {((int(start), int(end)), (int(starts[max_antecedent]), int(end_offsets[max_antecedent]))) for start, end, max_antecedent in
-                                         zip(starts, end_offsets, max_antecedents) if max_antecedent < len(starts)}
-
-                predicted_clusters, _ = extract_clusters_for_decode(mention_to_antecedent)
-                candidate_mentions = list(zip(starts, end_offsets))
-
-                mention_to_predicted_clusters = extract_mentions_to_predicted_clusters_from_clusters(predicted_clusters)
-                predicted_mentions = list(mention_to_predicted_clusters.keys())
-                post_pruning_mention_evaluator.update(candidate_mentions, gold_mentions)
-                mention_evaluator.update(predicted_mentions, gold_mentions)
-                coref_evaluator.update(predicted_clusters, gold_clusters, mention_to_predicted_clusters,
-                                       mention_to_gold_clusters)
-                doc_to_prediction[doc_key] = predicted_clusters
-                doc_to_subtoken_map[doc_key] = subtoken_maps
-
-        post_pruning_mention_precision, post_pruning_mentions_recall, post_pruning_mention_f1 = post_pruning_mention_evaluator.get_prf()
-        mention_precision, mentions_recall, mention_f1 = mention_evaluator.get_prf()
-        prec, rec, f1 = coref_evaluator.get_prf()
-
-        results = [(key, sum(val) / len(val)) for key, val in losses.items()]
-        results += [
-            ("post pruning mention precision", post_pruning_mention_precision),
-            ("post pruning mention recall", post_pruning_mentions_recall),
-            ("post pruning mention f1", post_pruning_mention_f1),
-            ("mention precision", mention_precision),
-            ("mention recall", mentions_recall),
-            ("mention f1", mention_f1),
-            ("precision", prec),
-            ("recall", rec),
-            ("f1", f1)
+        results = [
+            ("loss", tot_loss / num_batches),
         ]
         logger.info("***** Eval results {} *****".format(prefix))
         for key, values in results:

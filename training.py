@@ -137,14 +137,33 @@ def train(args, train_dataset, model, tokenizer, evaluator):
             #                 gold_clusters=gold_clusters,
             #                 return_all_outputs=False)
 
+            # model.train()
+            # outputs = model(batch.input_ids, batch.decoder_ids, batch.label_ids, batch.attention_mask)
+            # loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
+            # losses = outputs[-1]
+
             model.train()
-            outputs = model(batch.input_ids, batch.decoder_ids, batch.label_ids, batch.attention_mask)
+
+            outputs = tuple()
+            losses = {}
+
+            # "sentence_len", "input_ids", "attention_mask", "label_ids", "decoder_ids"
+            batch = tuple(tensor.to(args.device) for tensor in batch)
+            _, input_ids, attention_mask, label_ids, decoder_ids = batch
+
+            loss = model(attention_mask=attention_mask,
+                              input_ids=input_ids,
+                              decoder_input_ids=decoder_ids,
+                              labels=label_ids)[0]
+
+            losses.update({"loss": loss})
+            outputs = (loss,) + outputs + (losses,)
             loss = outputs[0]  # model outputs are always tuple in transformers (see doc)
             losses = outputs[-1]
 
             if args.n_gpu > 1:
                 loss = loss.mean()  # mean() to average on multi-gpu parallel training
-                losses = {key: val.mean() for key, val in losses.items()}
+                losses = {key: val.mean().item() for key, val in losses.items()}
             if args.gradient_accumulation_steps > 1:
                 loss = loss / args.gradient_accumulation_steps
 
@@ -154,11 +173,15 @@ def train(args, train_dataset, model, tokenizer, evaluator):
             else:
                 loss.backward()
 
+            loss = loss.detach()
             tr_loss += loss.item()
             if (step + 1) % args.gradient_accumulation_steps == 0:
+                loss = 0
+                outputs = tuple()
                 optimizer.step()
                 scheduler.step()  # Update learning rate schedule
                 model.zero_grad()
+                optimizer.zero_grad()
                 global_step += 1
 
                 # Log metrics
@@ -172,8 +195,10 @@ def train(args, train_dataset, model, tokenizer, evaluator):
 
                 if args.local_rank in [-1, 0] and args.do_eval and args.eval_steps > 0 and global_step % args.eval_steps == 0:
                     results = evaluator.evaluate(model, prefix=f'step_{global_step}', tb_writer=tb_writer, global_step=global_step)
-                    f1 = results["f1"]
-                    if f1 > best_f1:
+                    # f1 = results["f1"]
+                    f1 = results["loss"]
+                    # if f1 > best_f1:
+                    if f1 < best_f1:
                         best_f1 = f1
                         best_global_step = global_step
                         # Save model checkpoint
