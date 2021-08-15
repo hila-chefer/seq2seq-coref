@@ -149,11 +149,10 @@ def train(args, train_dataset, model, tokenizer, evaluator):
 
             # "sentence_len", "input_ids", "attention_mask", "label_ids", "decoder_ids"
             batch = tuple(tensor.to(args.device) for tensor in batch)
-            _, input_ids, attention_mask, label_ids, decoder_ids = batch
+            _, input_ids, attention_mask, label_ids = batch
 
             loss = model(attention_mask=attention_mask,
                               input_ids=input_ids,
-                              decoder_input_ids=decoder_ids,
                               labels=label_ids)[0]
 
             losses.update({"loss": loss})
@@ -202,7 +201,8 @@ def train(args, train_dataset, model, tokenizer, evaluator):
                         best_f1 = f1
                         best_global_step = global_step
                         # Save model checkpoint
-                        output_dir = os.path.join(args.output_dir, 'checkpoint-{}'.format(global_step))
+                        # output_dir = os.path.join(args.output_dir, 'checkpoint-{}'.format(global_step))
+                        output_dir = os.path.join(args.output_dir, 'best')
                         if not os.path.exists(output_dir):
                             os.makedirs(output_dir)
                         model_to_save = model.module if hasattr(model, 'module') else model  # Take care of distributed/parallel training

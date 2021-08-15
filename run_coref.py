@@ -110,7 +110,7 @@ def main():
 
     # model = Bart(tokenizer)
 
-    config = BartConfig()
+    config = BartConfig.from_json_file('./BartConfig/BartBase.json')
     model = BartForConditionalGeneration(config)
 
     model.to(args.device)

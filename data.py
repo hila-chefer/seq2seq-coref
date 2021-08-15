@@ -12,7 +12,7 @@ from torch.utils.data import Dataset
 
 # CorefExample = namedtuple("CorefExample", ["token_ids", "clusters"])
 
-BartCorefExample = namedtuple("BartCorefExample", ["sentence_len", "input_ids", "attention_mask", "label_ids", "decoder_ids"])
+BartCorefExample = namedtuple("BartCorefExample", ["sentence_len", "input_ids", "attention_mask", "label_ids"])
 
 logger = logging.getLogger(__name__)
 
@@ -170,10 +170,9 @@ class CorefDataset(Dataset):
                                                        max_length=self.max_seq_length, truncation=True)
                 labels = self.tokenizer.encode_plus(target, return_tensors="pt", pad_to_max_length=True,
                                                     max_length=self.max_seq_length, truncation=True).input_ids
-                decoder_input_ids = self.prepare_decoder_input_ids_from_labels(labels)
                 coref_examples.append(BartCorefExample(sentence_len=len(words), input_ids=input_ids.input_ids.flatten(),
                                                        attention_mask=input_ids.attention_mask.flatten(),
-                                                       decoder_ids=decoder_input_ids.flatten(), label_ids=labels.flatten()))
+                                                       label_ids=labels.flatten()))
             else:
                 num_examples_filtered += 1
         return coref_examples, num_examples_filtered
