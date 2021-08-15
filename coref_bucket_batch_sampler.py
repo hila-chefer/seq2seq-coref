@@ -72,11 +72,11 @@ class BucketBatchSampler(DataLoader):
             sorting_keys: List[str] = None,
             padding_noise: float = 0.1,
             drop_last: bool = False,
-            batch_size_1: bool = False,
+            batch_size_1: int = 1,
     ):
         super().__init__(data_source)
         data_source.examples.sort(key=lambda x: x.sentence_len, reverse=True)
-        self.batches = DataLoader(data_source, 1)
+        self.batches = DataLoader(data_source, batch_size_1)
 
     def __iter__(self) -> Iterable[List[int]]:
         return self.batches.__iter__()
