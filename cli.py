@@ -133,6 +133,7 @@ def parse_args():
 
     parser.add_argument("--save_if_best", action="store_true")
     parser.add_argument("--batch_size_1", type=int, default=1)
+    parser.add_argument("--from_pretrained", action="store_true")
     parser.add_argument("--tensorboard_dir", type=str, required=True)
 
     parser.add_argument("--conll_path_for_eval", type=str, default=None)

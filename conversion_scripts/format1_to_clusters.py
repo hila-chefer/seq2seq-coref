@@ -14,10 +14,11 @@ def convert_file(file_name):
         for line in f.readlines():
             line = ast.literal_eval(line)
             json_result = {}
-            json_result['sentences'] = line['sentences']
+            json_result['sentences'] = line['sentences'].split()
+            json_result['doc_id'] = line['doc_id']
             json_result['clusters'] = {}
 
-            target = line['target']
+            target = line['clusters'].split()
 
             stack = []
             ambiguity = False

@@ -15,15 +15,18 @@ def get_doc_key(doc_id, part):
     return "{}_{}".format(doc_id, int(part))
 
 
-def output_conll(input_file, output_file, predictions, subtoken_map):
+def output_conll(input_file, output_file, predictions):
     prediction_map = {}
-    for doc_key, clusters in predictions.items():
+    # for doc_key, clusters in predictions.items():
+    for pred in predictions:
+        doc_key = pred['doc_id']
+        clusters = pred['clusters']
         start_map = collections.defaultdict(list)
         end_map = collections.defaultdict(list)
         word_map = collections.defaultdict(list)
         for cluster_id, mentions in enumerate(clusters):
             for start, end in mentions:
-                start, end = subtoken_map[doc_key][start], subtoken_map[doc_key][end]
+                # start, end = subtoken_map[doc_key][start], subtoken_map[doc_key][end]
                 if start == end:
                     word_map[start].append(cluster_id)
                 else:
@@ -92,10 +95,10 @@ def official_conll_eval(gold_path, predicted_path, metric, official_stdout=True)
     return {"r": recall, "p": precision, "f": f1}
 
 
-def evaluate_conll(gold_path, predictions, subtoken_maps, official_stdout=True):
+def evaluate_conll(gold_path, predictions, official_stdout=True):
     with tempfile.NamedTemporaryFile(delete=True, mode="w") as prediction_file:
         with open(gold_path, "r") as gold_file:
-            output_conll(gold_file, prediction_file, predictions, subtoken_maps)
+            output_conll(gold_file, prediction_file, predictions)
         # logger.info("Predicted conll file: {}".format(prediction_file.name))
         results = {m: official_conll_eval(gold_file.name, prediction_file.name, m, official_stdout) for m in ("muc", "bcub", "ceafe") }
     return results

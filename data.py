@@ -140,23 +140,6 @@ class CorefDataset(Dataset):
                 examples.append((input_words, clusters))
         return examples
 
-    def shift_tokens_right(self, input_ids, pad_token_id, decoder_start_token_id):
-        """
-        Shift input ids one token to the right.
-        """
-        shifted_input_ids = input_ids.new_zeros(input_ids.shape)
-        shifted_input_ids[:, 1:] = input_ids[:, :-1].clone()
-        shifted_input_ids[:, 0] = decoder_start_token_id
-
-        assert pad_token_id is not None, "self.model.config.pad_token_id has to be defined."
-        # replace possible -100 values in labels by `pad_token_id`
-        shifted_input_ids.masked_fill_(shifted_input_ids == -100, pad_token_id)
-
-        return shifted_input_ids
-
-    def prepare_decoder_input_ids_from_labels(self, labels):
-        return self.shift_tokens_right(labels, self.tokenizer.pad_token_id, 2)
-
     def _tokenize(self, examples):
         coref_examples = []
         num_examples_filtered = 0
@@ -200,6 +183,77 @@ def get_dataset(args, tokenizer, evaluate=False):
     file_path, cache_path = (args.predict_file, args.predict_file_cache) if evaluate else (args.train_file, args.train_file_cache)
 
     coref_dataset = CorefDataset(file_path, tokenizer, max_seq_length=args.max_seq_length)
+    with open(cache_path, 'wb') as f:
+        pickle.dump(coref_dataset, f)
+
+    return coref_dataset
+
+
+
+
+
+BartCorefGenerate = namedtuple("BartCorefGenerate", ["sentence_len", "input_ids", "sentences", "doc_id"])
+
+class CorefDatasetGenerate(Dataset):
+    def __init__(self, file_path, tokenizer, max_seq_length=-1):
+        self.tokenizer = tokenizer
+        logger.info(f"Reading dataset from {file_path}")
+        examples = self._parse_jsonlines(file_path)
+        self.max_seq_length = max_seq_length
+        self.examples, self.num_examples_filtered = self._tokenize(examples)
+        logger.info(
+            f"Finished preprocessing Coref dataset. {len(self.examples)} examples were extracted, {self.num_examples_filtered} were filtered due to sequence length.")
+
+    def _parse_jsonlines(self, file_path):
+        examples = []
+        with open(file_path, 'r') as f:
+            for line in f:
+                d = json.loads(line.strip())
+                input_words = d["sentences"]
+                clusters = d["target"]
+                doc_id = d["doc_id"]
+                examples.append((input_words, clusters, doc_id))
+        return examples
+
+    def _tokenize(self, examples):
+        coref_examples = []
+        num_examples_filtered = 0
+        for words, clusters, doc_id in examples:
+            sentence = ' '.join(words)
+
+            input_ids_no_pad = self.tokenizer.encode_plus(sentence, return_tensors="pt").input_ids
+            if 0 < input_ids_no_pad.shape[1] < self.max_seq_length:
+                input_ids = self.tokenizer.encode_plus(sentence, return_tensors="pt", pad_to_max_length=True,
+                                                       max_length=self.max_seq_length, truncation=True)
+                coref_examples.append(BartCorefGenerate(sentence_len=len(words), input_ids=input_ids.input_ids.flatten(),
+                                                        sentences=sentence, doc_id=doc_id))
+            else:
+                num_examples_filtered += 1
+        return coref_examples, num_examples_filtered
+
+    def __len__(self):
+        return len(self.examples)
+
+    def __getitem__(self, item):
+        return self.examples[item]
+
+def get_dataset_generate(args, tokenizer, evaluate=False):
+    read_from_cache, file_path = False, ''
+    if evaluate and os.path.exists(args.predict_file_cache):
+        file_path = args.predict_file_cache
+        read_from_cache = True
+    elif (not evaluate) and os.path.exists(args.train_file_cache):
+        file_path = args.train_file_cache
+        read_from_cache = True
+
+    if read_from_cache:
+        logger.info(f"Reading dataset from {file_path}")
+        with open(file_path, 'rb') as f:
+            return pickle.load(f)
+
+    file_path, cache_path = (args.predict_file, args.predict_file_cache) if evaluate else (args.train_file, args.train_file_cache)
+
+    coref_dataset = CorefDatasetGenerate(file_path, tokenizer, max_seq_length=args.max_seq_length)
     with open(cache_path, 'wb') as f:
         pickle.dump(coref_dataset, f)
 

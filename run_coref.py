@@ -110,8 +110,13 @@ def main():
 
     # model = Bart(tokenizer)
 
-    config = BartConfig.from_json_file('./BartConfig/BartBase.json')
-    model = BartForConditionalGeneration(config)
+    if not args.from_pretrained:
+        logger.info("Training from scratch")
+        config = BartConfig.from_json_file('./BartConfig/BartBase.json')
+        model = BartForConditionalGeneration(config)
+    else:
+        logger.info("Finetuning")
+        model = BartForConditionalGeneration.from_pretrained('facebook/bart-base')
 
     model.to(args.device)
 
