@@ -64,10 +64,9 @@ class Evaluator:
                 # "sentence_len", "input_ids", "attention_mask", "label_ids", "decoder_ids"
                 batch = tuple(tensor.to(self.args.device) for tensor in batch)
                 _, input_ids, attention_mask, label_ids = batch
+                # label_ids[label_ids[:, :] == model.config.pad_token_id] = -100
 
-                loss = model(attention_mask=attention_mask,
-                             input_ids=input_ids,
-                             labels=label_ids)[0]
+                loss = model(attention_mask=attention_mask, input_ids=input_ids, labels=label_ids)[0]
 
                 losses.update({"loss": loss})
                 outputs = (loss,) + outputs + (losses,)

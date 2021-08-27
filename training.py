@@ -8,7 +8,7 @@ import torch
 from coref_bucket_batch_sampler import BucketBatchSampler
 from tqdm import tqdm, trange
 
-from transformers import AdamW, get_linear_schedule_with_warmup
+from transformers import AdamW, get_linear_schedule_with_warmup, get_polynomial_decay_schedule_with_warmup
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,9 @@ def train(args, train_dataset, model, tokenizer, evaluator):
                       lr=args.learning_rate,
                       betas=(args.adam_beta1, args.adam_beta2),
                       eps=args.adam_epsilon)
-    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps,
+    # scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps,
+    #                                             num_training_steps=t_total)
+    scheduler = get_polynomial_decay_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps,
                                                 num_training_steps=t_total)
 
     loaded_saved_optimizer = False
@@ -150,10 +152,9 @@ def train(args, train_dataset, model, tokenizer, evaluator):
             # "sentence_len", "input_ids", "attention_mask", "label_ids", "decoder_ids"
             batch = tuple(tensor.to(args.device) for tensor in batch)
             _, input_ids, attention_mask, label_ids = batch
+            # label_ids[label_ids[:, :] == model.config.pad_token_id] = -100
 
-            loss = model(attention_mask=attention_mask,
-                              input_ids=input_ids,
-                              labels=label_ids)[0]
+            loss = model(attention_mask=attention_mask, input_ids=input_ids, labels=label_ids)[0]
 
             losses.update({"loss": loss})
             outputs = (loss,) + outputs + (losses,)

@@ -61,7 +61,7 @@ def postprocess(source, target):
         for j in range(len_diff):
             out.append('-')
     else:
-        out = out[:len_diff]
+        out = out[:len(out) + len_diff]
     return " ".join(out).replace('|', ' | ')
 
 

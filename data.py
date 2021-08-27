@@ -120,73 +120,76 @@ logger = logging.getLogger(__name__)
 #         return tensored_batch
 
 
-class CorefDataset(Dataset):
-    def __init__(self, file_path, tokenizer, max_seq_length=-1):
-        self.tokenizer = tokenizer
-        logger.info(f"Reading dataset from {file_path}")
-        examples = self._parse_jsonlines(file_path)
-        self.max_seq_length = max_seq_length
-        self.examples, self.num_examples_filtered = self._tokenize(examples)
-        logger.info(
-            f"Finished preprocessing Coref dataset. {len(self.examples)} examples were extracted, {self.num_examples_filtered} were filtered due to sequence length.")
-
-    def _parse_jsonlines(self, file_path):
-        examples = []
-        with open(file_path, 'r') as f:
-            for line in f:
-                d = json.loads(line.strip())
-                input_words = d["sentences"]
-                clusters = d["target"]
-                examples.append((input_words, clusters))
-        return examples
-
-    def _tokenize(self, examples):
-        coref_examples = []
-        num_examples_filtered = 0
-        for words, clusters in examples:
-            sentence = ' '.join(words)
-            target = ' '.join(clusters)
-
-            input_ids_no_pad = self.tokenizer.encode_plus(sentence, return_tensors="pt").input_ids
-            if 0 < input_ids_no_pad.shape[1] < self.max_seq_length:
-                input_ids = self.tokenizer.encode_plus(sentence, return_tensors="pt", pad_to_max_length=True,
-                                                       max_length=self.max_seq_length, truncation=True)
-                labels = self.tokenizer.encode_plus(target, return_tensors="pt", pad_to_max_length=True,
-                                                    max_length=self.max_seq_length, truncation=True).input_ids
-                coref_examples.append(BartCorefExample(sentence_len=len(words), input_ids=input_ids.input_ids.flatten(),
-                                                       attention_mask=input_ids.attention_mask.flatten(),
-                                                       label_ids=labels.flatten()))
-            else:
-                num_examples_filtered += 1
-        return coref_examples, num_examples_filtered
-
-    def __len__(self):
-        return len(self.examples)
-
-    def __getitem__(self, item):
-        return self.examples[item]
-
-def get_dataset(args, tokenizer, evaluate=False):
-    read_from_cache, file_path = False, ''
-    if evaluate and os.path.exists(args.predict_file_cache):
-        file_path = args.predict_file_cache
-        read_from_cache = True
-    elif (not evaluate) and os.path.exists(args.train_file_cache):
-        file_path = args.train_file_cache
-        read_from_cache = True
-
-    if read_from_cache:
-        logger.info(f"Reading dataset from {file_path}")
-        with open(file_path, 'rb') as f:
-            return pickle.load(f)
-
-    file_path, cache_path = (args.predict_file, args.predict_file_cache) if evaluate else (args.train_file, args.train_file_cache)
-
-    coref_dataset = CorefDataset(file_path, tokenizer, max_seq_length=args.max_seq_length)
-    with open(cache_path, 'wb') as f:
-        pickle.dump(coref_dataset, f)
-
-    return coref_dataset
+# class CorefDataset(Dataset):
+#     def __init__(self, file_path, tokenizer, max_seq_length=-1):
+#         self.tokenizer = tokenizer
+#         logger.info(f"Reading dataset from {file_path}")
+#         examples = self._parse_jsonlines(file_path)
+#         self.max_seq_length = max_seq_length
+#         self.examples, self.num_examples_filtered = self._tokenize(examples)
+#         logger.info(
+#             f"Finished preprocessing Coref dataset. {len(self.examples)} examples were extracted, {self.num_examples_filtered} were filtered due to sequence length.")
+#
+#     def _parse_jsonlines(self, file_path):
+#         examples = []
+#         with open(file_path, 'r') as f:
+#             for line in f:
+#                 d = json.loads(line.strip())
+#                 input_words = d["sentences"]
+#                 clusters = d["target"]
+#                 examples.append((input_words, clusters))
+#         return examples
+#
+#     def _tokenize(self, examples):
+#         coref_examples = []
+#         num_examples_filtered = 0
+#         for words, clusters in examples:
+#             sentence = ' '.join(words)
+#             target = ' '.join(clusters)
+#
+#             input_ids_no_pad = self.tokenizer.encode_plus(sentence, return_tensors="pt").input_ids
+#             if 0 < input_ids_no_pad.shape[1] < self.max_seq_length:
+#                 # input_ids = self.tokenizer.encode_plus(sentence, return_tensors="pt", pad_to_max_length=True,
+#                 #                                        max_length=self.max_seq_length, truncation=True)
+#                 # labels = self.tokenizer.encode_plus(target, return_tensors="pt", pad_to_max_length=True,
+#                 #                                     max_length=self.max_seq_length, truncation=True).input_ids
+#
+#                 input_ids = self.tokenizer.encode_plus(sentence, return_tensors="pt", max_length=self.max_seq_length, truncation=True)
+#                 labels = self.tokenizer.encode_plus(target, return_tensors="pt", max_length=self.max_seq_length, truncation=True).input_ids
+#                 coref_examples.append(BartCorefExample(sentence_len=len(words), input_ids=input_ids.input_ids.flatten(),
+#                                                        attention_mask=input_ids.attention_mask.flatten(),
+#                                                        label_ids=labels.flatten()))
+#             else:
+#                 num_examples_filtered += 1
+#         return coref_examples, num_examples_filtered
+#
+#     def __len__(self):
+#         return len(self.examples)
+#
+#     def __getitem__(self, item):
+#         return self.examples[item]
+#
+# def get_dataset(args, tokenizer, evaluate=False):
+#     read_from_cache, file_path = False, ''
+#     if evaluate and os.path.exists(args.predict_file_cache):
+#         file_path = args.predict_file_cache
+#         read_from_cache = True
+#     elif (not evaluate) and os.path.exists(args.train_file_cache):
+#         file_path = args.train_file_cache
+#         read_from_cache = True
+#
+#     if read_from_cache:
+#         logger.info(f"Reading dataset from {file_path}")
+#         with open(file_path, 'rb') as f:
+#             return pickle.load(f)
+#
+#     file_path, cache_path = (args.predict_file, args.predict_file_cache) if evaluate else (args.train_file, args.train_file_cache)
+#
+#     coref_dataset = CorefDataset(file_path, tokenizer, max_seq_length=args.max_seq_length)
+#     with open(cache_path, 'wb') as f:
+#         pickle.dump(coref_dataset, f)
+#
+#     return coref_dataset
 
 
 
@@ -221,11 +224,9 @@ class CorefDatasetGenerate(Dataset):
         for words, clusters, doc_id in examples:
             sentence = ' '.join(words)
 
-            input_ids_no_pad = self.tokenizer.encode_plus(sentence, return_tensors="pt").input_ids
-            if 0 < input_ids_no_pad.shape[1] < self.max_seq_length:
-                input_ids = self.tokenizer.encode_plus(sentence, return_tensors="pt", pad_to_max_length=True,
-                                                       max_length=self.max_seq_length, truncation=True)
-                coref_examples.append(BartCorefGenerate(sentence_len=len(words), input_ids=input_ids.input_ids.flatten(),
+            input_ids = self.tokenizer([sentence], max_length=1024, return_tensors='pt').input_ids
+            if 0 < input_ids.shape[1] < self.max_seq_length:
+                coref_examples.append(BartCorefGenerate(sentence_len=len(words), input_ids=input_ids.flatten(),
                                                         sentences=sentence, doc_id=doc_id))
             else:
                 num_examples_filtered += 1
