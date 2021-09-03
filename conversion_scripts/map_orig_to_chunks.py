@@ -1,6 +1,6 @@
 import itertools
 from conversion_scripts.onto_to_format1 import convert_file as convert_to_format1
-# from conversion_scripts.onto_to_format2 import convert_file as convert_to_format1
+#from conversion_scripts.onto_to_format2 import convert_file as convert_to_format2
 import os
 import sys
 
@@ -36,20 +36,26 @@ def augment_format(in_file, out_file, format_num):
             lines[i] = lines[i].strip()
             if lines[i].startswith("#end"):
                 curr_sentences_combs = create_chunks(curr_sentences, 768)
-                with open('../tmp_{}'.format(counter),'w') as g:
+                # with open('../tmp_{}'.format(counter),'a+') as g:
+                with open('../orig_test_by_chunks_7'.format(counter),'a+') as g:
                     for x, modified_doc in enumerate(curr_sentences_combs):
-                        g.write("#{}-{}\n".format(doc_name,x ))
+                        # print(modified_doc)
+                        g.write("#begin document ({}); part {}{}\n".format(doc_name,part_name, str(x).zfill(3) ))
+                        # print("##begin document ({}); part {}{}\n".format(doc_name,part_name, str(x).zfill(3) ))
                         for sent in modified_doc:
                             for wordline in sent:
                                 g.write(wordline+'\n')
+                            g.write('\n')
                         g.write("#end document\n")
 
-                convert_func('../tmp_{}'.format(counter), out_file)
-                os.remove('../tmp_{}'.format(counter))
+                # convert_func('../tmp_{}'.format(counter), out_file)
+                # os.remove('../tmp_{}'.format(counter))
                 counter += 1
                 curr_sentences = []
             elif lines[i].startswith("#"):
-                doc_name =  lines[i].split()[2][1:-2]+'/'+lines[i].split()[-1]
+                #print(lines[i])
+                doc_name =  lines[i].split()[2][1:-2]
+                part_name = lines[i].split()[-1]
             elif lines[i] == '':
                 curr_sentences.append(curr_line)
                 curr_line = []
@@ -60,7 +66,7 @@ def augment_format(in_file, out_file, format_num):
 if __name__ == '__main__':
     in_file = sys.argv[1]
     out_file = sys.argv[2]
-    #format_num = sys.argv[3]
+    # format_num = sys.argv[3]
     augment_format(in_file, out_file, 1)
 
 

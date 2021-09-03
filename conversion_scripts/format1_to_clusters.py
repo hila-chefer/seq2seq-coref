@@ -2,6 +2,7 @@ import re
 import json
 import sys
 import ast
+
 def from_dict_to_list(dic):
     result = []
     for i in dic:
@@ -18,7 +19,7 @@ def convert_file(file_name):
             json_result['doc_id'] = line['doc_id']
             json_result['clusters'] = {}
 
-            target = line['clusters'].split()
+            target = line['clusters'].replace('|', ' | ').split()
 
             stack = []
             ambiguity = False

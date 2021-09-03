@@ -6,8 +6,7 @@ import os
 WORD_COL_NUM = 3
 TARGET_COL_NUM = -1
 
-def remap_target(raw_target, words):
-    mapping = {}
+def remap_target(raw_target):
     counter = 0
     result = []
     stack = []
@@ -18,21 +17,12 @@ def remap_target(raw_target, words):
             reg_iter = re.finditer("(\d+)", target)
             for match in reg_iter:
                 span, group = match.span(), match.group()
-                if group not in mapping:
-                    mapping[group] = counter
-                    counter += 1
-
                 if num_tar == 0:
-                    # res_str += words[i]+ " " + target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
-                    res_str +=  target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
-                    stack.append(str(mapping[group]))
+                    res_str += target[0:span[0]] + str(group) + target[span[1]:span[1]+1]
                 else:
-                    # res_str += ' ' + words[i] + ' | ' + target[:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
-                    res_str +=  ' | ' + target[:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
-
+                    res_str += ' | ' + target[:span[0]] + str(group) + target[span[1]:span[1]+1]
         if res_str == '':
-            # result.append(words[i])
-            result.append(raw_target[i].replace('-','_'))
+                result.append(raw_target[i])
         else:
             splitted_res_str = res_str.split()
             for i in splitted_res_str:
@@ -52,7 +42,7 @@ def convert_file(file_name, to_output):
             if line.startswith('#') and not line.startswith('#end'):
                 id = line[1:-1]
             if line.startswith('#end'):
-                remapped = remap_target(raw_target, words)
+                remapped = remap_target(raw_target)
                 json_res = {'doc_id' : id, 'sentences' : words, 'target' : remapped}
                 words, raw_target = [], []
                 with open(to_output, "a+") as outfile:
@@ -65,3 +55,6 @@ if __name__ == '__main__':
     input_file = sys.argv[1]
     output_file = sys.argv[2]
     convert_file(input_file, output_file)
+
+
+

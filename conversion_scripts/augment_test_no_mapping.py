@@ -1,6 +1,6 @@
 import itertools
-from conversion_scripts.onto_to_format1 import convert_file as convert_to_format1
-# from conversion_scripts.onto_to_format2 import convert_file as convert_to_format1
+from conversion_scripts.onto_to_format1_no_remap import convert_file as convert_to_format1
+#from conversion_scripts.onto_to_format2 import convert_file as convert_to_format2
 import os
 import sys
 
@@ -33,6 +33,7 @@ def augment_format(in_file, out_file, format_num):
         curr_sentences = []
         curr_line = []
         for i in range(len(lines)):
+            # print("{}/{}".format(i, len(lines)))
             lines[i] = lines[i].strip()
             if lines[i].startswith("#end"):
                 curr_sentences_combs = create_chunks(curr_sentences, 768)
@@ -49,6 +50,7 @@ def augment_format(in_file, out_file, format_num):
                 counter += 1
                 curr_sentences = []
             elif lines[i].startswith("#"):
+                #print(lines[i])
                 doc_name =  lines[i].split()[2][1:-2]+'/'+lines[i].split()[-1]
             elif lines[i] == '':
                 curr_sentences.append(curr_line)
@@ -57,11 +59,49 @@ def augment_format(in_file, out_file, format_num):
                 curr_line.append(lines[i])
 
 
+import ast
+import re
+import json
+
+def reset(input_file, output_file):
+    processed = []
+    mapping = {}
+    counter = 0
+
+    with open(input_file, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            dic_line = ast.literal_eval(line)
+            doc_name = dic_line['doc_id'].split('-')[0]
+            if doc_name not in processed:
+                mapping = {}
+                counter = 0
+                processed.append(doc_name)
+            target = dic_line['target']
+            for j, token in enumerate(target):
+                single_token_reg = re.match('\((\d+)\)', token)
+                open_span_reg = re.match('\((\d+)', token)
+                close_span_reg = re.match('(\d+)\)', token)
+                regs = [single_token_reg, open_span_reg, close_span_reg]
+                contains_num = [i for i in range(len(regs)) if regs[i]]
+                if  len(contains_num) > 0:
+                    num = regs[contains_num[0]].groups()[0]
+                    if num not in mapping:
+                        mapping[num] = counter
+                        counter+=1
+                    target[j] = target[j].replace(num, str(mapping[num]))
+            dic_line['target'] = target
+            with open(output_file,'a+') as g:
+                json.dump(dic_line, g)
+                g.write('\n')
+
+
 if __name__ == '__main__':
     in_file = sys.argv[1]
     out_file = sys.argv[2]
-    #format_num = sys.argv[3]
-    augment_format(in_file, out_file, 1)
+    augment_format(in_file, 'tmp', 1)
+    reset('tmp', out_file)
+    os.remove('tmp')
 
 
 

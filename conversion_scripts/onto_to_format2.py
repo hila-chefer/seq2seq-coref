@@ -1,30 +1,70 @@
+import re
 import sys
 import json
-from conversion_scripts import onto_to_format1, format1_to_clusters
 import os
 
-def flatten_list_of_lists(lst):
-    return [elem for sublst in lst for elem in sublst]
+WORD_COL_NUM = 3
+TARGET_COL_NUM = -1
 
-def convert_file(file_name, output_file):
+def remap_target(raw_target, words):
+    mapping = {}
+    counter = 0
+    result = []
+    stack = []
+    for i in range(len(raw_target)):
+        targets = raw_target[i].split('|')
+        res_str = ""
+        for num_tar, target in enumerate(targets):
+            reg_iter = re.finditer("(\d+)", target)
+            for match in reg_iter:
+                span, group = match.span(), match.group()
+                if group not in mapping:
+                    mapping[group] = counter
+                    counter += 1
+
+                if num_tar == 0:
+                    # res_str += words[i]+ " " + target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
+                    # res_str +=  target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
+
+                    res_str += "[ " + words[i]+ " , " + target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1] + " ] "
+
+                    # stack.append(str(mapping[group]))
+                else:
+                    res_str += '[ ' + words[i] +  " , " + ' | ' + str(mapping[group]) + target[span[1]:span[1]+1] + " ] "
+                    # res_str +=  ' | ' + target[:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
+                    # res_str += '[ ' + words[i] +  " , " + ' | ' + str(mapping[group]) + target[span[1]:span[1]+1] + " ] "
+
+
+        if res_str == '':
+            # result.append(words[i])
+            # result.append(raw_target[i].replace('-','_'))
+            result.append('[ ' + words[i] + ' , ' + raw_target[i].replace('-','_') + ' ]')
+
+        else:
+            splitted_res_str = res_str.split()
+            for i in splitted_res_str:
+                result.append(i)
+    return result
+
+def convert_file(file_name, to_output):
+    result = []
     with open(file_name,'r') as f:
         words, raw_target = [], []
-        tmp_name = '../../tmp_file'
-        onto_to_format1.convert_file(file_name, tmp_name)
-        format1_to_cluster = format1_to_clusters.convert_file(tmp_name)
-        os.remove(tmp_name)
-        for i, doc in enumerate(format1_to_cluster):
-            to_output = {}
-            to_write_doc = ''
-            for cluster in doc['clusters']:
-                for x,y in cluster:
-                    to_write_doc += str([x,y]) + ' '
-                to_write_doc += 'SEP '
-            to_output['sentences'] = doc['sentences']
-            to_output['target'] = to_write_doc[:-5]
-            with open(output_file, "a+") as outfile:
-                json.dump(to_output, outfile)
-                outfile.write('\n')
+        lines = f.readlines()
+        for line in lines:
+            if not line.startswith('#') and line.strip() != '':
+                columns = line.split()
+                words.append(columns[WORD_COL_NUM])
+                raw_target.append(columns[TARGET_COL_NUM])
+            if line.startswith('#') and not line.startswith('#end'):
+                id = line[1:-1]
+            if line.startswith('#end'):
+                remapped = remap_target(raw_target, words)
+                json_res = {'doc_id' : id, 'sentences' : words, 'target' : remapped}
+                words, raw_target = [], []
+                with open(to_output, "a+") as outfile:
+                    json.dump(json_res, outfile)
+                    outfile.write('\n')
 
 
 if __name__ == '__main__':
