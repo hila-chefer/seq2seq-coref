@@ -213,19 +213,20 @@ class CorefDatasetGenerate(Dataset):
             for line in f:
                 d = json.loads(line.strip())
                 input_words = d["sentences"]
-                clusters = d["target"]
+                clusters = []
                 doc_id = d["doc_id"]
                 examples.append((input_words, clusters, doc_id))
         return examples
 
     def _tokenize(self, examples):
+
+        print("max length:", self.max_seq_length)
         coref_examples = []
         num_examples_filtered = 0
         for words, clusters, doc_id in examples:
             sentence = ' '.join(words)
-
-            input_ids = self.tokenizer([sentence], max_length=1024, return_tensors='pt').input_ids
-            if 0 < input_ids.shape[1] < self.max_seq_length:
+            input_ids = self.tokenizer([sentence], max_length=self.max_seq_length, return_tensors="pt", padding='max_length', truncation=True).input_ids
+            if 0 < input_ids.shape[1] <= self.max_seq_length:
                 coref_examples.append(BartCorefGenerate(sentence_len=len(words), input_ids=input_ids.flatten(),
                                                         sentences=sentence, doc_id=doc_id))
             else:

@@ -7,14 +7,22 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-BEGIN_DOCUMENT_REGEX = re.compile(r"#begin document \((.*)\); part (\d{3})(\d{3})")  # First line at each document
-COREF_RESULTS_REGEX = re.compile(r".*Coreference: Recall: \([0-9.]+ / [0-9.]+\) ([0-9.]+)%\tPrecision: \([0-9.]+ / [0-9.]+\) ([0-9.]+)%\tF1: ([0-9.]+)%.*", re.DOTALL)
+COREF_RESULTS_REGEX = re.compile(
+        r".*Coreference: Recall: \([0-9.]+ / [0-9.]+\) ([0-9.]+)%\tPrecision: \([0-9.]+ / [0-9.]+\) ([0-9.]+)%\tF1: ([0-9.]+)%.*",
+        re.DOTALL)
 
-
-def get_doc_key(doc_id, part, chunk):
+def get_doc_key_clusters(doc_id, part, chunk):
     return "{}/{}-{}".format(doc_id, part, int(chunk))
 
-def output_conll(input_file, output_file, predictions):
+def get_doc_key(doc_id, part):
+    return "{}/{}".format(doc_id, part)
+
+def output_conll(input_file, output_file, predictions, chunks=True):
+    if chunks:
+        BEGIN_DOCUMENT_REGEX = re.compile(r"#begin document \((.*)\); part (\d{3})(\d{3})")  # First line at each document
+    else:
+        BEGIN_DOCUMENT_REGEX = re.compile(r"#begin document \((.*)\); part (\d{3})")  # First line at each document
+
     prediction_map = {}
     # for doc_key, clusters in predictions.items():
     for pred in predictions:
@@ -45,7 +53,10 @@ def output_conll(input_file, output_file, predictions):
         elif row[0].startswith("#"):
             begin_match = re.match(BEGIN_DOCUMENT_REGEX, line)
             if begin_match:
-                doc_key = get_doc_key(begin_match.group(1), begin_match.group(2), begin_match.group(3))
+                if chunks:
+                    doc_key = get_doc_key_clusters(begin_match.group(1), begin_match.group(2), begin_match.group(3))
+                else:
+                    doc_key = get_doc_key(begin_match.group(1), begin_match.group(2))
                 start_map, end_map, word_map = prediction_map[doc_key]
                 word_index = 0
             output_file.write(line)
@@ -94,10 +105,10 @@ def official_conll_eval(gold_path, predicted_path, metric, official_stdout=True)
     return {"r": recall, "p": precision, "f": f1}
 
 
-def evaluate_conll(gold_path, predictions, official_stdout=True):
+def evaluate_conll(gold_path, predictions, official_stdout=True, chunks=True):
     with tempfile.NamedTemporaryFile(delete=True, mode="w") as prediction_file:
         with open(gold_path, "r") as gold_file:
-            output_conll(gold_file, prediction_file, predictions)
+            output_conll(gold_file, prediction_file, predictions, chunks)
         # logger.info("Predicted conll file: {}".format(prediction_file.name))
         results = {m: official_conll_eval(gold_file.name, prediction_file.name, m, official_stdout) for m in ("muc", "bcub", "ceafe") }
     return results

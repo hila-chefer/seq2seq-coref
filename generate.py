@@ -66,55 +66,58 @@ def main():
     logger.info("  Examples number: %d", len(eval_dataset))
     model.eval()
 
-    # results = []
-    # for batch in eval_dataloader:
-    #     with torch.no_grad():
-    #         # "sentence_len", "input_ids", "sentences", "doc_id"
-    #         _, input_ids, sentences, doc_id = batch
-    #         input_ids = input_ids.to(device)
-    #         summary_ids = model.generate(input_ids, num_beams=args.beam_size, max_length=args.max_seq_length, early_stopping=True)
-    #         # replace <unk> special token with actual word
-    #         unk_id = tokenizer("unknown", add_special_tokens=False)['input_ids'][0]
-    #         final_ids = [[id.item() if id != tokenizer.unk_token_id else unk_id for id in summary_ids[0]]]
-    #         decoded = tokenizer.batch_decode(final_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-    #
-    #         batch_size = input_ids.shape[0]
-    #         for b in range(batch_size):
-    #             json_result = {}
-    #             json_result['sentences'] = sentences[b]
-    #             json_result['doc_id'] = doc_id[b]
-    #             json_result['clusters'] = decoded[b]
-    #
-    #             results.append(json_result)
-    #
-    # with open(args.output_path, 'w') as f:
-    #     for i in results:
-    #         json.dump(i, f)
-    #         f.write('\n')
+    if not args.get_metrics:
+        results = []
+        for batch in eval_dataloader:
+            with torch.no_grad():
+                # "sentence_len", "input_ids", "sentences", "doc_id"
+                _, input_ids, sentences, doc_id = batch
+                input_ids = input_ids.to(device)
+                summary_ids = model.generate(input_ids, num_beams=args.beam_size, max_length=args.max_seq_length, early_stopping=True)
+                # replace <unk> special token with actual word
+                unk_id = tokenizer("unknown", add_special_tokens=False)['input_ids'][0]
+                final_ids = summary_ids
+                final_ids[final_ids == tokenizer.unk_token_id] = unk_id
+                # final_ids = [[id.item() if id != tokenizer.unk_token_id else unk_id for id in summary_ids[0]]]
+                decoded = tokenizer.batch_decode(final_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
 
-    # post process
-    post_processed = []
-    with open(args.output_path, 'r') as f:
-        lines = f.readlines()
-        for i in lines:
-            dic = ast.literal_eval(i)
-            dic['clusters'] = post_process.postprocess(dic['sentences'], dic['clusters'].split())
-            post_processed.append(dic)
-            with open('{}_processed'.format(args.output_path), 'a+') as f:
-                json.dump(dic, f)
+                batch_size = input_ids.shape[0]
+                for b in range(batch_size):
+                    json_result = {}
+                    json_result['sentences'] = sentences[b]
+                    json_result['doc_id'] = doc_id[b]
+                    json_result['clusters'] = decoded[b]
+
+                    results.append(json_result)
+
+        with open(args.output_path, 'w') as f:
+            for i in results:
+                json.dump(i, f)
                 f.write('\n')
+    else:
+        # post process
+        post_processed = []
+        with open(args.output_path, 'r') as f:
+            lines = f.readlines()
+            for i in lines:
+                dic = ast.literal_eval(i)
+                dic['clusters'] = post_process.postprocess(dic['sentences'], dic['clusters'].split())
+                post_processed.append(dic)
+                with open('{}_processed'.format(args.output_path), 'a+') as f:
+                    json.dump(dic, f)
+                    f.write('\n')
 
-    cluster_format = format1_to_clusters.convert_file('{}_processed'.format(args.output_path))
-    predictions = []
-    for dic in cluster_format:
-        prediction = {}
-        prediction['doc_id'] = dic['doc_id']
-        prediction['clusters'] = dic['clusters']
-        predictions.append(prediction)
+        cluster_format = format1_to_clusters.convert_file('{}_processed'.format(args.output_path))
+        predictions = []
+        for dic in cluster_format:
+            prediction = {}
+            prediction['doc_id'] = dic['doc_id']
+            prediction['clusters'] = dic['clusters']
+            predictions.append(prediction)
 
-    conll_results = evaluate_conll(args.conll_path_for_eval, predictions)
-    official_f1 = sum(results["f"] for results in conll_results.values()) / len(conll_results)
-    logger.info('Official avg F1: %.4f' % official_f1)
+        conll_results = evaluate_conll(args.conll_path_for_eval, predictions, chunks=args.chunks)
+        official_f1 = sum(results["f"] for results in conll_results.values()) / len(conll_results)
+        logger.info('Official avg F1: %.4f' % official_f1)
 
 if __name__ == "__main__":
     main()

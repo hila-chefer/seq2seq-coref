@@ -20,6 +20,8 @@ def parse_args():
     parser.add_argument("--experiment_name", type=str, default=None)
     parser.add_argument("--batch_size_1", type=int, default=1)
     parser.add_argument("--conll_path_for_eval", type=str, default=None)
+    parser.add_argument("--get_metrics", default=False, action='store_true')
+    parser.add_argument("--chunks", default=False, action='store_true')
     parser.add_argument(
         "--predict_file",
         required=True,
