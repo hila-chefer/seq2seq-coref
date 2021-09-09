@@ -1,14 +1,14 @@
-# Coreference Resolution without Span Representations
+# Coreference Resolution with Sequence-to-Sequence Models
 
-This repository contains the code implementation from the paper ["Coreference Resolution without Span Representations"](https://arxiv.org/abs/2101.00434).
+This repository contains the code implementation of our project.
 
 - [Set up](#set-up)
   * [Requirements](#requirements)
   * [Download the official evaluation script](#download-the-official-evaluation-script)
   * [Prepare the dataset](#prepare-the-dataset)
-- [Evaluation](#evaluation)
+- [Pre-processing](#Pre-processing)
 - [Training](#training)
-- [Cite](#cite)
+- [Post-processing](#Post-processing)
 
 ## Set up
 
@@ -37,112 +37,30 @@ python minimize.py $DATA_DIR
 ``` 
 Credit: This script was taken from the [e2e-coref](https://github.com/kentonl/e2e-coref/) repo.
 
-## Evaluation
-Download our trained model:
- ```
-export MODEL_DIR=<model_dir>
-curl -L https://www.dropbox.com/sh/7hpw662xylbmi5o/AAC3nfP4xdGAkf0UkFGzAbrja?dl=1 > temp_model.zip
-unzip temp_model.zip -d $MODEL_DIR
-rm -rf temp_model.zip
-```
-
-and run:
-```
-export OUTPUT_DIR=<output_dir>
-export CACHE_DIR=<cache_dir>
-export MODEL_DIR=<model_dir>
-export DATA_DIR=<data_dir>
-export SPLIT_FOR_EVAL=<dev or test>
-
-python run_coref.py \
-        --output_dir=$OUTPUT_DIR \
-        --cache_dir=$CACHE_DIR \
-        --model_type=longformer \
-        --model_name_or_path=$MODEL_DIR \
-        --tokenizer_name=allenai/longformer-large-4096 \
-        --config_name=allenai/longformer-large-4096  \
-        --train_file=$DATA_DIR/train.english.jsonlines \
-        --predict_file=$DATA_DIR/test.english.jsonlines \
-        --do_eval \
-        --num_train_epochs=129 \
-        --logging_steps=500 \
-        --save_steps=3000 \
-        --eval_steps=1000 \
-        --max_seq_length=4096 \
-        --train_file_cache=$DATA_DIR/train.english.4096.pkl \
-        --predict_file_cache=$DATA_DIR/test.english.4096.pkl \
-        --amp \
-        --normalise_loss \
-        --max_total_seq_len=5000 \
-        --experiment_name=eval_model \
-        --warmup_steps=5600 \
-        --adam_epsilon=1e-6 \
-        --head_learning_rate=3e-4 \
-        --learning_rate=1e-5 \
-        --adam_beta2=0.98 \
-        --weight_decay=0.01 \
-        --dropout_prob=0.3 \
-        --save_if_best \
-        --top_lambda=0.4  \
-        --tensorboard_dir=$OUTPUT_DIR/tb \
-        --conll_path_for_eval=$DATA_DIR/$SPLIT_FOR_EVAL.english.v4_gold_conll
-```
-
+## Pre-processing
+The folder `conversion_scripts` contains all the scripts required for pre-processing and post-processing.
+- To convert the OntoNotes format to the baseline format use the `conversion_scripts/onto_to_format1.py` script.
+- To convert the OntoNotes format to our format use the `conversion_scripts/onto_to_format2.py` script. ########FIX THIS!######
+- To split the data to chunks (after converting to the desired format):  ########COMPLETE THIS!######
 
 ## Training
-Train a coreference model using:
+Train a coreference model using `final_train.py` and your chosen hyperparameters. example for T5 ########COMPLETE THIS!######
+
+## Post-processing
+- Use the `conversion_scripts/augment_format.py` on your test file to a format that the models can genarate output for.
+- Use the `generate.py` script to generate the classifications for the test set with your trained model. For example:
 ```
-export OUTPUT_DIR=<output_dir>
-export CACHE_DIR=<cache_dir>
-export DATA_DIR=<data_dir>
-
-python run_coref.py \
-        --output_dir=$OUTPUT_DIR \
-        --cache_dir=$CACHE_DIR \
-        --model_type=longformer \
-        --model_name_or_path=allenai/longformer-large-4096 \
-        --tokenizer_name=allenai/longformer-large-4096 \
-        --config_name=allenai/longformer-large-4096  \
-        --train_file=$DATA_DIR/train.english.jsonlines \
-        --predict_file=$DATA_DIR/dev.english.jsonlines \
-        --do_train \
-        --do_eval \
-        --num_train_epochs=129 \
-        --logging_steps=500 \
-        --save_steps=3000 \
-        --eval_steps=1000 \
-        --max_seq_length=4096 \
-        --train_file_cache=$DATA_DIR/train.english.4096.pkl \
-        --predict_file_cache=$DATA_DIR/dev.english.4096.pkl \
-        --gradient_accumulation_steps=1 \
-        --amp \
-        --normalise_loss \
-        --max_total_seq_len=5000 \
-        --experiment_name="s2e-model" \
-        --warmup_steps=5600 \
-        --adam_epsilon=1e-6 \
-        --head_learning_rate=3e-4 \
-        --learning_rate=1e-5 \
-        --adam_beta2=0.98 \
-        --weight_decay=0.01 \
-        --dropout_prob=0.3 \
-        --save_if_best \
-        --top_lambda=0.4  \
-        --tensorboard_dir=$OUTPUT_DIR/tb \
-        --conll_path_for_eval=$DATA_DIR/dev.english.v4_gold_conll
+python generate.py --model_path /path/to/your/model --max_seq_length 768 --beam_size 4 --batch_size_1 3 --predict_file /path/to/your/test/file --predict_file_cache /path/to/your/test/file/cache --output_path path/to/output/results/of/generation/to --model_type T5 --conll_path_for_eval /path/to/onto/notes/test/file
 ```
+predict_file- this is the test file after you applied `conversion_scripts/augment_format.py`.
+conll_path_for_eval - this is the test file in the original OntoNotes format. If you wish to perform a local test (i.e., the test set is split to chucks as well), use the `conversion_scripts/map_orig_to_chunks.py` to split the OntoNotes format to chunks while keeping it in the original format.
 
-To evaluate your trained model on test go [here](#evaluation). 
-
-## Cite
-
-If you use this code in your research, please cite our paper:
-
+- When using our format, after getting the generation results to the path specified in `output_path`, convert our format to the baseline format using: `conversion_scripts/format2_to_format1.py`.
+- When running the global test, you need to stitch all chunks after the generation. This can be done using: `conversion_scripts/postprocess_upgraded_preds.py`.
+- To get the final results for your generated output, run:
 ```
-@article{kirstain2021coreference,
-  title={Coreference Resolution without Span Representations},
-  author={Kirstain, Yuval and Ram, Ori and Levy, Omer},
-  journal={arXiv preprint arXiv:2101.00434},
-  year={2021}
-}
+python generate.py --model_path /path/to/your/model --max_seq_length 768 --beam_size 4 --batch_size_1 3 --predict_file /path/to/your/test/file --predict_file_cache /path/to/your/test/file/cache --output_path path/to/final/generation/results --model_type T5 --conll_path_for_eval /path/to/onto/notes/test/file --get_metrics
 ```
+output_path- in case of stitching/ format conversion, this needs to be the path to the results *after* all manipulations.
+If you wish to run a local test- add the `--chunks` flag to your command as well. 
+
