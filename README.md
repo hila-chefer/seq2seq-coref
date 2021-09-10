@@ -44,9 +44,9 @@ The folder `conversion_scripts` contains all the scripts required for pre-proces
 ## Training
 Train a coreference model using `final_train.py` and your chosen hyperparameters. example for T5 fine-tuning:
 ```
-python final_train.py --model_name_or_path t5-base --do_train --do_eval --train_file chunks_7_data/train_chunks_7_formatted.json  --validation_file chunks_7_data/dev_chunks_7_formatted.json --text_column sentences --summary_column target --dataset_config "3.0.0" --output_dir /tmp/tst-summarization --per_device_train_batch_size=1 --per_device_eval_batch_size=4 --overwrite_output_dir  --save_total_limit 1 --max_target_length 768 --max_source_length 768 --evaluation_strategy steps --eval_steps 500 --num_train_epoch 5 --output_dir new7lr8e-5 --save_total_limit 2 --load_best_model_at_end --save_steps 500 --learning_rate 8e-5 
+python final_train.py --model_name_or_path t5-base --do_train --do_eval --train_file /path/to/train/set  --validation_file /path/to/validation/set --text_column sentences --summary_column target --dataset_config "3.0.0" --output_dir /output/path --per_device_train_batch_size=1 --per_device_eval_batch_size=4 --overwrite_output_dir  --save_total_limit 1 --max_target_length 768 --max_source_length 768 --evaluation_strategy steps --eval_steps 500 --num_train_epoch 5 --save_total_limit 2 --load_best_model_at_end --save_steps 500 --learning_rate 8e-5 
 ```
-
+train_file, validation_file need to be pre-processed according to the desired format.
 ## Post-processing
 - Use the `conversion_scripts/augment_format.py` on your test file to a format that the models can genarate output for.
 - Use the `generate.py` script to generate the classifications for the test set with your trained model. For example:
