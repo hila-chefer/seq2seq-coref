@@ -48,7 +48,7 @@ python final_train.py --model_name_or_path t5-base --do_train --do_eval --train_
 ```
 train_file, validation_file need to be pre-processed according to the desired format.
 ## Post-processing
-- Use the `conversion_scripts/augment_format.py` on your test file to a format that the models can genarate output for.
+- Use the `conversion_scripts/augment_format.py` on your test file to a format that the models can genarate output for (you can use either the baseline format or our format- the targets are not used).
 - Use the `generate.py` script to generate the classifications for the test set with your trained model. For example:
 ```
 python generate.py --model_path /path/to/your/model --max_seq_length 768 --beam_size 4 --batch_size_1 3 --predict_file /path/to/your/test/file --predict_file_cache /path/to/your/test/file/cache --output_path path/to/output/results/of/generation/to --model_type T5 --conll_path_for_eval /path/to/onto/notes/test/file
