@@ -2,6 +2,7 @@ import ast
 import re
 import json
 import sys
+import os
 
 def main(file_path):
     indices = {}
@@ -41,7 +42,7 @@ def main(file_path):
                     json.dump(dic_line, g)
                     g.write('\n')
                 continue
-            offset_to_add = max_indices[doc_name+'-{}'.format(int(chunk_num)-1)]
+            offset_to_add = 1+max_indices[doc_name+'-{}'.format(int(chunk_num)-1)]
             target = dic_line['clusters'].split()
 
             for j, token in enumerate(target):
@@ -55,14 +56,41 @@ def main(file_path):
                     target[j] = target[j].replace(num, str(offset_to_add + int(num)))
 
             dic_line['clusters'] = " ".join(target)
-            with open('{}_processed'.format(file_path), 'a+') as g:
+            with open('upgraded_preds_processed', 'a+') as g:
                 json.dump(dic_line, g)
                 g.write('\n')
 
+#
+def merge_by_doc(file_name, output_file):
+    map = {}
+    with open(file_name, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+
+            dic_line = ast.literal_eval(line)
+            doc_name, chunk_num = dic_line['doc_id'].split('-')
+            if doc_name not in map:
+                map[doc_name] = {chunk_num : (dic_line['sentences'], dic_line['clusters'])}
+            else:
+                map[doc_name][chunk_num] = (dic_line['sentences'], dic_line['clusters'])
+
+    dic_doc = {}
+    for doc_name in map:
+        dic_doc['sentences'] = ''
+        dic_doc['clusters'] = ''
+        dic_doc['doc_id'] = doc_name
+        for i in range(0,100):
+            if str(i) not in map[doc_name]:
+                break
+            dic_doc['sentences'] += ' ' + map[doc_name][str(i)][0]
+            dic_doc['clusters'] += ' ' + map[doc_name][str(i)][1]
+        with open(output_file,'a+') as f:
+            json.dump(dic_doc, f)
+            f.write('\n')
+
 if __name__ == '__main__':
     input_file = sys.argv[1]
+    output_file = sys.argv[2]
     main(input_file)
-
-
-
-
+    merge_by_doc('upgraded_preds_processed', output_file)
+    os.remove('upgraded_preds_processed')
