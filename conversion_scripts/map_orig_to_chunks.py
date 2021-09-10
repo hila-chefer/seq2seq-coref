@@ -37,7 +37,7 @@ def augment_format(in_file, out_file, format_num):
             if lines[i].startswith("#end"):
                 curr_sentences_combs = create_chunks(curr_sentences, 768)
                 # with open('../tmp_{}'.format(counter),'a+') as g:
-                with open('../orig_test_by_chunks_7'.format(counter),'a+') as g:
+                with open(out_file,'a+') as g:
                     for x, modified_doc in enumerate(curr_sentences_combs):
                         # print(modified_doc)
                         g.write("#begin document ({}); part {}{}\n".format(doc_name,part_name, str(x).zfill(3) ))
