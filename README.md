@@ -38,6 +38,7 @@ python minimize.py $DATA_DIR
 Credit: This script was taken from the [e2e-coref](https://github.com/kentonl/e2e-coref/) repo.
 
 ## Pre-processing
+**Important note: all instructions are for a split of 7 sentences per chunk. For 10 sentences per chunk, change the number of sentences in the scripts inside `conversion_scripts`**
 The folder `conversion_scripts` contains all the scripts required for pre-processing and post-processing.
 - To split the data to chunks `conversion_scripts/augment_format.py`. The first parameter is the path to the input fille, the second is the path to place the output file, and for the third, enter 1 for the baseline format, and 2 for our novel format.
 
