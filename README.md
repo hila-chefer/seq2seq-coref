@@ -39,12 +39,13 @@ Credit: This script was taken from the [e2e-coref](https://github.com/kentonl/e2
 
 ## Pre-processing
 The folder `conversion_scripts` contains all the scripts required for pre-processing and post-processing.
-- To convert the OntoNotes format to the baseline format use the `conversion_scripts/onto_to_format1.py` script.
-- To convert the OntoNotes format to our format use the `conversion_scripts/onto_to_format2.py` script. ########FIX THIS!######
-- To split the data to chunks (after converting to the desired format):  ########COMPLETE THIS!######
+- To split the data to chunks `conversion_scripts/augment_format.py`. The first parameter is the path to the input fille, the second is the path to place the output file, and for the third, enter 1 for the baseline format, and 2 for our novel format.
 
 ## Training
-Train a coreference model using `final_train.py` and your chosen hyperparameters. example for T5 ########COMPLETE THIS!######
+Train a coreference model using `final_train.py` and your chosen hyperparameters. example for T5 fine-tuning:
+```
+
+```
 
 ## Post-processing
 - Use the `conversion_scripts/augment_format.py` on your test file to a format that the models can genarate output for.
@@ -56,6 +57,7 @@ predict_file- this is the test file after you applied `conversion_scripts/augmen
 conll_path_for_eval - this is the test file in the original OntoNotes format. If you wish to perform a local test (i.e., the test set is split to chucks as well), use the `conversion_scripts/map_orig_to_chunks.py` to split the OntoNotes format to chunks while keeping it in the original format.
 
 - When using our format, after getting the generation results to the path specified in `output_path`, convert our format to the baseline format using: `conversion_scripts/format2_to_format1.py`.
+- Next, for post-processing of the baseline format, use the `conversion_scripts/post_process.py`.
 - When running the global test, you need to stitch all chunks after the generation. This can be done using: `conversion_scripts/postprocess_upgraded_preds.py`.
 - To get the final results for your generated output, run:
 ```
