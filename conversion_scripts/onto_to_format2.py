@@ -23,23 +23,16 @@ def remap_target(raw_target, words):
                     counter += 1
 
                 if num_tar == 0:
-                    # res_str += words[i]+ " " + target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
-                    # res_str +=  target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
-
-                    res_str += "[ " + words[i]+ " , " + target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1] + " ] "
-
-                    # stack.append(str(mapping[group]))
+                    res_str += words[i]+ " " + target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
+                    #es_str +=  target[0:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
+                    stack.append(str(mapping[group]))
                 else:
-                    res_str += '[ ' + words[i] +  " , " + ' | ' + str(mapping[group]) + target[span[1]:span[1]+1] + " ] "
-                    # res_str +=  ' | ' + target[:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
-                    # res_str += '[ ' + words[i] +  " , " + ' | ' + str(mapping[group]) + target[span[1]:span[1]+1] + " ] "
-
+                    res_str += ' ' + words[i] + ' | ' + target[:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
+                    #res_str +=  ' | ' + target[:span[0]] + str(mapping[group]) + target[span[1]:span[1]+1]
 
         if res_str == '':
-            # result.append(words[i])
-            # result.append(raw_target[i].replace('-','_'))
-            result.append('[ ' + words[i] + ' , ' + raw_target[i].replace('-','_') + ' ]')
-
+            result.append(words[i])
+            result.append(raw_target[i].replace('-','_'))
         else:
             splitted_res_str = res_str.split()
             for i in splitted_res_str:
