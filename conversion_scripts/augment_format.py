@@ -1,6 +1,6 @@
 import itertools
 from conversion_scripts.onto_to_format1 import convert_file as convert_to_format1
-# from conversion_scripts.onto_to_format2 import convert_file as convert_to_format1
+from conversion_scripts.onto_to_format2 import convert_file as convert_to_format2
 import os
 import sys
 
@@ -25,7 +25,7 @@ def create_chunks(lines, chunk_size):
         chunks.append(curr_chunk)
     return chunks
 
-def augment_format(in_file, out_file, format_num):
+def augment_format(in_file, out_file, convert_func):
     convert_func = convert_to_format1
     with open(in_file,'r') as f:
         counter = 0
@@ -60,8 +60,9 @@ def augment_format(in_file, out_file, format_num):
 if __name__ == '__main__':
     in_file = sys.argv[1]
     out_file = sys.argv[2]
-    #format_num = sys.argv[3]
-    augment_format(in_file, out_file, 1)
+    format_num = sys.argv[3]
+    conversion_func = convert_to_format1 if format_num == 1 else convert_to_format2
+    augment_format(in_file, out_file, conversion_func)
 
 
 
