@@ -56,7 +56,7 @@ python generate.py --model_path /path/to/your/model --max_seq_length 768 --beam_
 predict_file- this is the test file after you applied `conversion_scripts/augment_format.py`.
 
 conll_path_for_eval - this is the test file in the original OntoNotes format. 
-#If you wish to perform a local test (i.e., the test set is split to chucks as well), use the `conversion_scripts/map_orig_to_chunks.py` to split the OntoNotes format to chunks while keeping it in the original format.#
+**If you wish to perform a local test (i.e., the test set is split to chucks as well), use the `conversion_scripts/map_orig_to_chunks.py` to split the OntoNotes format to chunks while keeping it in the original format.**
 
 - When using our format, after getting the generation results to the path specified in `output_path`, convert our format to the baseline format using: `conversion_scripts/format2_to_format1.py`.
 - Next, for post-processing of the baseline format, use the `conversion_scripts/post_process.py`.
@@ -67,5 +67,5 @@ python generate.py --model_path /path/to/your/model --max_seq_length 768 --beam_
 ```
 output_path- this needs to be the path to the results *after* all manipulations.
 
-#If you wish to run a local test- add the `--chunks` flag to your command as well.#
+**If you wish to run a local test- add the `--chunks` flag to your command as well.**
 
