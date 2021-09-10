@@ -3,6 +3,7 @@ from conversion_scripts.onto_to_format1 import convert_file as convert_to_format
 from conversion_scripts.onto_to_format2 import convert_file as convert_to_format2
 import os
 import sys
+import json
 
 def create_chunks(lines, chunk_size):
     # print(lines)
@@ -26,7 +27,6 @@ def create_chunks(lines, chunk_size):
     return chunks
 
 def augment_format(in_file, out_file, convert_func):
-    convert_func = convert_to_format1
     with open(in_file,'r') as f:
         counter = 0
         lines = f.readlines()
@@ -57,12 +57,25 @@ def augment_format(in_file, out_file, convert_func):
                 curr_line.append(lines[i])
 
 
+def join_data(file):
+    with open(file,'r') as f:
+        lines = f.readlines()
+        to_write = []
+        for line in lines:
+            line_dic = json.loads(line)
+            line_dic['sentences'] = " ".join(line_dic['sentences'])
+            line_dic['target'] = " ".join(line_dic['target'])
+            to_write.append(line_dic)
+
+    with open(file,'w+') as f:
+        for line in to_write:
+            json.dump(line, f)
+            f.write('\n')
+
 if __name__ == '__main__':
     in_file = sys.argv[1]
     out_file = sys.argv[2]
-    format_num = sys.argv[3]
+    format_num = int(sys.argv[3])
     conversion_func = convert_to_format1 if format_num == 1 else convert_to_format2
     augment_format(in_file, out_file, conversion_func)
-
-
-
+    join_data(out_file)
