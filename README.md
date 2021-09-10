@@ -54,7 +54,9 @@ train_file, validation_file need to be pre-processed according to the desired fo
 python generate.py --model_path /path/to/your/model --max_seq_length 768 --beam_size 4 --batch_size_1 3 --predict_file /path/to/your/test/file --predict_file_cache /path/to/your/test/file/cache --output_path path/to/output/results/of/generation/to --model_type T5 --conll_path_for_eval /path/to/onto/notes/test/file
 ```
 predict_file- this is the test file after you applied `conversion_scripts/augment_format.py`.
-conll_path_for_eval - this is the test file in the original OntoNotes format. If you wish to perform a local test (i.e., the test set is split to chucks as well), use the `conversion_scripts/map_orig_to_chunks.py` to split the OntoNotes format to chunks while keeping it in the original format.
+
+conll_path_for_eval - this is the test file in the original OntoNotes format. 
+#If you wish to perform a local test (i.e., the test set is split to chucks as well), use the `conversion_scripts/map_orig_to_chunks.py` to split the OntoNotes format to chunks while keeping it in the original format.#
 
 - When using our format, after getting the generation results to the path specified in `output_path`, convert our format to the baseline format using: `conversion_scripts/format2_to_format1.py`.
 - Next, for post-processing of the baseline format, use the `conversion_scripts/post_process.py`.
@@ -64,5 +66,6 @@ conll_path_for_eval - this is the test file in the original OntoNotes format. If
 python generate.py --model_path /path/to/your/model --max_seq_length 768 --beam_size 4 --batch_size_1 3 --predict_file /path/to/your/test/file --predict_file_cache /path/to/your/test/file/cache --output_path path/to/final/generation/results --model_type T5 --conll_path_for_eval /path/to/onto/notes/test/file --get_metrics
 ```
 output_path- this needs to be the path to the results *after* all manipulations.
-If you wish to run a local test- add the `--chunks` flag to your command as well. 
+
+#If you wish to run a local test- add the `--chunks` flag to your command as well.#
 
