@@ -1,6 +1,6 @@
 numpy
-torch==1.4.0
-transformers==3.3.1
+torch==1.7.1
+transformers==4.10.0.dev0
 tensorboard==2.3.0
 gitpython
 scipy==1.5.2
