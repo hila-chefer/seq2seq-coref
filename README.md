@@ -4,8 +4,6 @@ This repository contains the code implementation of our project.
 
 - [Set up](#set-up)
   * [Requirements](#requirements)
-  * [Download the official evaluation script](#download-the-official-evaluation-script)
-  * [Prepare the dataset](#prepare-the-dataset)
 - [Pre-processing](#Pre-processing)
 - [Training](#training)
 - [Post-processing](#Post-processing)
@@ -17,25 +15,6 @@ Set up a virtual environment and run:
 ```
 pip install -r requirements.txt
 ```
-
-Follow the [Quick Start](https://github.com/NVIDIA/apex) to enable mixed precision using apex.
-
-#### Download the official evaluation script
-Run (from inside the repo):
- 
-```
-git clone https://github.com/conll/reference-coreference-scorers.git
-```
-
-#### Prepare the dataset
-
-This repo assumes access to the [OntoNotes 5.0](https://catalog.ldc.upenn.edu/LDC2013T19) corpus.
-Convert the original dataset into jsonlines format using:
-```
-export DATA_DIR=<data_dir>
-python minimize.py $DATA_DIR
-``` 
-Credit: This script was taken from the [e2e-coref](https://github.com/kentonl/e2e-coref/) repo.
 
 ## Pre-processing
 **Important note: all instructions are for a split of 7 sentences per chunk. For 10 sentences per chunk, change the number of sentences in the scripts inside `conversion_scripts`**
